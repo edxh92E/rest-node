@@ -1,11 +1,45 @@
 const express = require('express');
 const Usuario = require('../models/usuario');
 const bcrypt = require('bcrypt');
+const _ = require('underscore');
 
 app = express();
 
 app.get('/usuario', (req, res) => {
-    res.json('Hola que haces');
+
+    let desde = req.query.desde || 0;
+    desde = Number(desde);
+
+    let limite = req.query.limite || 5;
+    limite = Number(limite);
+
+    
+    // Usuario.find({}, 'nombre email role estado google img') // agregando exclusiones
+    Usuario.find({ estado: true }, 'nombre email role estado google img')
+        .skip(desde)
+        .limit(limite)
+        .exec((error, usuarios) => {
+
+        if(error) {
+            return res.status(400).json({
+                ok: false,
+                err: error
+            })
+        }
+
+        Usuario.count({estado: true}, (error, conteo) => {
+            
+            res.json({
+                ok: true,
+                usuarios,
+                cuantos: conteo
+            })
+
+        });
+
+        
+
+    });
 });
 
 app.post('/usuario', (req, res) => {
@@ -44,13 +78,15 @@ app.post('/usuario', (req, res) => {
 
 app.put('/usuario/:id', (req, res) => {
     let id = req.params.id;
-    let body = req.body;
+    let body = _.pick(req.body, ['nombre', 'email', 'img', 'role', 'estado']);
+    
+
 
     // Usuario.findById(id, (err, usuarioDB) => {
     // usuarioDB.save();
 
     // Usuario.findByIdAndUpdate(id, body, {new: true}, (error, usuarioDB) => {
-    Usuario.findOneAndUpdate(id, body, {new: true}, (error, usuarioDB) => {
+    Usuario.findOneAndUpdate(id, body, {new: true, runValidators: true}, (error, usuarioDB) => {
 
         if(error) {
             return res.status(400).json({
@@ -65,6 +101,40 @@ app.put('/usuario/:id', (req, res) => {
         })
 
     });
+});
+
+app.delete('/usuario/:id', function (req, res) {
+
+    let id = req.params.id;
+
+    // Borrando fisicamente
+    // Usuario.findByIdAndRemove(id, (error, usuarioDB) => {
+    // Modificando estado del usuario para borrarlo
+    Usuario.findOneAndUpdate(id, { estado: false }, {new: true}, (error, usuarioDB) => {
+
+        if(error) {
+            return res.status(400).json({
+                ok: false,
+                err: error
+            })
+        }
+
+        if(!usuarioDB) {
+            return res.status(400).json({
+                ok: false,
+                err: {
+                    message: "usuario no encontrado"
+                }
+            });
+        }
+
+        res.json({
+            ok: true,
+            usuario: usuarioDB
+        });
+
+    });
+
 });
 
 module.exports = app;
