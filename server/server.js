@@ -1,38 +1,23 @@
 require('./config/config');
 const express = require('express');
+const mongoose = require('mongoose');
+
 const app = express();
 const bodyParser = require('body-parser')
 
 // Middleware
 app.use(bodyParser.urlencoded({ extended: false }))
-app.use(bodyParser.json())
+app.use(bodyParser.json());
+
+app.use(require('./routes/usuario'));
 
 const PORT = 3000;
 
-app.get('/usuario', (req, res) => {
-    res.json('Hola que haces');
-});
-
-app.post('/usuario', (req, res) => {
-    let body = req.body;
-    if (body.nombre === undefined){
-        res.status(400).json({
-                ok: false,
-                mensaje: 'el nombre es necesario'
-            });
-    }
-    res.json({
-        persona: body
-    });
-});
 
 
-app.put('/usuario/:id', (req, res) => {
-    let id = req.params.id;
-    let respuesta = {
-        id
-    }
-    res.json(respuesta);
+mongoose.connect('mongodb://localhost:27017/cafe', { useNewUrlParser: true }, (error, res) => {
+    if (error) throw error;
+    console.log('base de datos ONLINE');
 });
 
 app.listen(process.env.PORT, () => {
