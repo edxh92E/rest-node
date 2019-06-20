@@ -2,11 +2,17 @@ const express = require('express');
 const Usuario = require('../models/usuario');
 const bcrypt = require('bcrypt');
 const _ = require('underscore');
-const { verificaToken } = require('../middleware/autenticacion');
+const { verificaToken, verificarRole } = require('../middleware/autenticacion');
 
 app = express();
 
 app.get('/usuario', verificaToken, (req, res) => {
+
+    /*return res.json({
+        usuario: req.usuario,
+        nombre: req.usuario.nombre,
+        email: req.usuario.email,
+    });*/
 
     let desde = req.query.desde || 0;
     desde = Number(desde);
@@ -43,7 +49,7 @@ app.get('/usuario', verificaToken, (req, res) => {
     });
 });
 
-app.post('/usuario', (req, res) => {
+app.post('/usuario', [verificaToken, verificarRole], (req, res) => {
     let body = req.body;
 
 
@@ -77,7 +83,7 @@ app.post('/usuario', (req, res) => {
 });
 
 
-app.put('/usuario/:id', (req, res) => {
+app.put('/usuario/:id', [verificaToken, verificarRole], (req, res) => {
     let id = req.params.id;
     let body = _.pick(req.body, ['nombre', 'email', 'img', 'role', 'estado']);
     
@@ -104,7 +110,7 @@ app.put('/usuario/:id', (req, res) => {
     });
 });
 
-app.delete('/usuario/:id', function (req, res) {
+app.delete('/usuario/:id', [verificaToken, verificarRole], function (req, res) {
 
     let id = req.params.id;
 
