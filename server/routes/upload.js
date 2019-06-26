@@ -5,6 +5,7 @@ const path = require('path');
 const app = express();
 
 const Usuario = require('../models/usuario');
+const Producto = require('../models/producto');
 
 
 // default options
@@ -69,8 +70,12 @@ app.put('/upload/:tipo/:id', function(req, res) {
                 ok: false,
                 err
             });
-
-        imagenUsuario(id, res, nombreArchvio);
+        
+        if (tipo === 'usuarios') {
+            imagenUsuario(id, res, nombreArchvio);
+        } else {
+            imagenProducto(id, res, nombreArchvio);
+        }
     });
 
 });
@@ -119,8 +124,48 @@ function imagenUsuario(id, res, nombreArchvio) {
     })
 }
 
-function imagenProducto() {
+function imagenProducto(id, res, nombreArchvio) {
 
+    Producto.findById(id, (error, productoDB) => {
+        if(error) {
+            // borrarmos 
+            borrarArchivo(nombreArchvio, 'productos');
+            return res.status(500).json({
+                ok: false,
+                error
+            });
+        }
+
+        if(!productoDB) {
+            return res.status(400).json({
+                ok: false,
+                error: {
+                    message: 'El producto no existe'
+                } 
+            })
+        }
+
+        borrarArchivo(productoDB.img, 'productos');
+
+        productoDB.img = nombreArchvio;
+        productoDB.save((error, productoGuardado) => {
+            if (error){
+                return res.status(500).json({
+                        ok: false,
+                        error
+                    }) 
+            }
+
+            res.json({
+                ok: true,
+                producto: productoGuardado,
+                img: nombreArchvio
+            })
+        });
+
+
+
+    });
 }
 
 function borrarArchivo(nombreArchvio, tipo) {
