@@ -1,5 +1,7 @@
 const express = require('express');
 const fileUpload = require('express-fileupload');
+const fs = require('fs');
+const path = require('path');
 const app = express();
 
 const Usuario = require('../models/usuario');
@@ -68,12 +70,67 @@ app.put('/upload/:tipo/:id', function(req, res) {
                 err
             });
 
-        res.json({
-            ok: true,
-            message: 'Imagen subida correctamente'
-        });
+        imagenUsuario(id, res, nombreArchvio);
     });
 
 });
+
+function imagenUsuario(id, res, nombreArchvio) {
+
+    Usuario.findById(id, (error, usuarioDB) => {
+        if(error) {
+            // borrarmos 
+            borrarArchivo(nombreArchvio, 'usuarios');
+            return res.status(500).json({
+                ok: false,
+                error
+            });
+        }
+
+        if(!usuarioDB) {
+            return res.status(400).json({
+                ok: false,
+                error: {
+                    message: 'El usuario no existe'
+                } 
+            })
+        }
+
+        borrarArchivo(usuarioDB.img, 'usuarios');
+
+        usuarioDB.img = nombreArchvio;
+        usuarioDB.save((error, usuarioGuardado) => {
+            if (error){
+                return res.status(500).json({
+                        ok: false,
+                        error
+                    }) 
+            }
+
+            res.json({
+                ok: true,
+                usuario: usuarioGuardado,
+                img: nombreArchvio
+            })
+        });
+
+
+
+    })
+}
+
+function imagenProducto() {
+
+}
+
+function borrarArchivo(nombreArchvio, tipo) {
+    // Verificamos la ruta del archivo
+    let pathImagen = path.resolve(__dirname, `../../uploads/${tipo}/${nombreArchvio}`); 
+    // funcion que determina si existe un archivo esta no es asincrona
+    if(fs.existsSync(pathImagen)) {
+        // borrando archivo 
+        fs.unlinkSync(pathImagen);
+    }
+}
 
 module.exports = app;
