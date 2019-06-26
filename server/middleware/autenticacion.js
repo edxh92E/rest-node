@@ -41,7 +41,30 @@ let verificarRole = ( req, res, next ) => {
     }
 
 };
+
+// Verificar token en url 
+let verificaTokenImg = (req, res, next) => {
+    let token = req.query.token;
+
+    jwt.verify(token, process.env.SEED, (error, decode) => {
+
+        if (error) {
+            return res.status(401).json({
+                ok: false,
+                error: {
+                    message: 'Token no valido'
+                }
+            });
+        }
+
+        // payload del JWT
+        req.usuario = decode.usuario;
+        next();
+
+    })
+}
 module.exports = {
     verificaToken,
-    verificarRole
+    verificarRole,
+    verificaTokenImg
 }
